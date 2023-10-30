@@ -118,10 +118,11 @@ def tokenize(source: str) -> Iterator[Token]:
         elif index == BACKSLASH and can_advance():
             if source[cursor + 1] in SPECIAL_CHARS:
                 backslashes += 1
+                buffer.append(source[cursor + 1])
             else:
                 buffer.append(index)
+                buffer.append(source[cursor + 1])
 
-            buffer.append(source[cursor + 1])
             cursor += 1
         else:
             buffer.append(index)
