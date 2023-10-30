@@ -77,58 +77,29 @@ def check_escaped_int(value: str) -> str:
         return value[1:]
 
 
-def tokenize(source: str) -> Iterator[Token]:
-    cursor = 0
-    backslashes = 0
-    buffer = []
-
-    def send_buffer() -> Iterator[Token]:
-        nonlocal backslashes
-        if not buffer:
-            return None
-
-        value = ''.join(buffer)
-        for variation, kind in [
-            (int, TokenKind.NUMBER),
-            (check_escaped_int, TokenKind.TEXT),
-        ]:
-            try:
-                value = variation(value)
-            except ValueError:
-                continue
-            else:
-                break
-        else:
-            kind = TokenKind.TEXT
-
-        yield Token(
-            kind, value, start=cursor - (len(buffer) + backslashes), end=cursor
-        )
-        buffer.clear()
-        backslashes = 0
-
-    def can_advance() -> bool:
-        return cursor < len(source)
-
-    while can_advance():
-        index = source[cursor]
-        if index in OPERATORS:
-            yield from send_buffer()
-            yield Token(OPERATORS[index], index, cursor, cursor + 1)
-        elif index == BACKSLASH and can_advance():
-            if source[cursor + 1] in SPECIAL_CHARS:
-                backslashes += 1
-            else:
-                buffer.append(index)
-
-            buffer.append(source[cursor + 1])
-            cursor += 1
-        else:
-            buffer.append(index)
-
-        cursor += 1
-
-    yield from send_buffer()
+kind = TokenKind.TEXT
+    (int, TokenKind.NUMBER),
+if not backslashes:
+    (check_escaped_int, TokenKind.TEXT),
+    for variation, kind in [
+]:
+        (int, TokenKind.NUMBER),
+    try:
+        (check_escaped_int, TokenKind.TEXT),
+        value = variation(value)
+    ]:
+    except ValueError:
+        try:
+        continue
+            value = variation(value)
+    else:
+        except ValueError:
+        break
+            continue
+else:
+    else:
+kind = TokenKind.TEXT
+        break
 
 
 class PathAction(Enum):
