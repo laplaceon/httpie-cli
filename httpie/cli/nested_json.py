@@ -79,53 +79,40 @@ def check_escaped_int(value: str) -> str:
 
 def tokenize(source: str) -> Iterator[Token]:
     cursor = 0
-    backslashes = 0
     buffer = []
 
     def send_buffer() -> Iterator[Token]:
-        nonlocal backslashes
         if not buffer:
-            return None
+            return
 
         value = ''.join(buffer)
-        for variation, kind in [
-            (int, TokenKind.NUMBER),
-            (check_escaped_int, TokenKind.TEXT),
-        ]:
-            try:
-                value = variation(value)
-            except ValueError:
-                continue
-            else:
-                break
-        else:
+        kind = TokenKind.TEXT
+        if value.startswith(BACKSLASH):
+            # If we detect an escaped sequence, ensure it remains as text.
             kind = TokenKind.TEXT
-
-        yield Token(
-            kind, value, start=cursor - (len(buffer) + backslashes), end=cursor
-        )
-        buffer.clear()
-        backslashes = 0
-
-    def can_advance() -> bool:
-        return cursor < len(source)
-
-    while can_advance():
-        index = source[cursor]
-        if index in OPERATORS:
-            yield from send_buffer()
-            yield Token(OPERATORS[index], index, cursor, cursor + 1)
-        elif index == BACKSLASH and can_advance():
-            if source[cursor + 1] in SPECIAL_CHARS:
-                backslashes += 1
-            else:
-                buffer.append(index)
-
-            buffer.append(source[cursor + 1])
-            cursor += 1
         else:
-            buffer.append(index)
+            try:
+                # Try to interpret the buffer as an integer.
+                value = int(value)
+                kind = TokenKind.NUMBER
+            except ValueError:
+                pass  # If it's not a number, it will default to text.
 
+        yield Token(kind, value, start=cursor - len(value), end=cursor)
+        buffer.clear()
+
+    while cursor < len(source):
+        char = source[cursor]
+        if char in SPECIAL_CHARS:
+            yield from send_buffer()
+            yield Token(OPERATORS[char], char, cursor, cursor + 1)
+        elif char == BACKSLASH:
+            # Process a backslash; if the next character is also a backslash, treat as a literal.
+            if (cursor + 1 < len(source)) and (source[cursor + 1] == BACKSLASH):
+                buffer.append(BACKSLASH)
+                cursor += 1  # Skip the next backslash.
+        else:
+            buffer.append(char)
         cursor += 1
 
     yield from send_buffer()
